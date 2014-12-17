@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+
+RAILS_ENV=${RAILS_ENV:-production}
+SERVER_NAME=${SERVER_NAME:-webapp}
+
+cp /etc/nginx/webapp.conf /etc/nginx/sites-enabled/webapp.conf
+
+# configure nginx vhost
+sed 's,{{RAILS_ENV}},'"${RAILS_ENV}"',g' -i /etc/nginx/sites-enabled/webapp.conf
+sed 's,{{SERVER_NAME}},'"${SERVER_NAME}"',g' -i /etc/nginx/sites-enabled/webapp.conf
+
+# Init db
+QUERY="SELECT count(1) FROM information_schema.tables WHERE table_schema = '${DB_NAME}';"
+TABLE_COUNT=$(mysql -h ${DB_HOST} -u ${DB_USER} ${DB_PASS:+-p$DB_PASS} -ss -e "${QUERY}")
+
+if [ ${TABLE_COUNT} -ne 0 ]; then
+  QUERY="SELECT count(1) FROM ${DB_NAME}.schema_migrations;"
+  MIGRATION_COUNT=$(mysql -h ${DB_HOST} -u ${DB_USER} ${DB_PASS:+-p$DB_PASS} -ss -e "${QUERY}")
+  MIGRATION_FILE_COUNT=$(ls -1 db/migrate/ | wc -l)
+fi
+
+if [ -z "${TABLE_COUNT}" -o ${TABLE_COUNT} -eq 0 -o ${MIGRATION_COUNT} -ne ${MIGRATION_FILE_COUNT} ]; then
+  echo "Migrating DB. Please be patient, this could take a while..."
+  bundle exec rake db:migrate RAILS_ENV=${RAILS_ENV} --trace
+fi
+
+exit 0
+
