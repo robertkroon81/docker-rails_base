@@ -1,4 +1,4 @@
-FROM phusion/passenger-ruby21:0.9.14
+FROM phusion/passenger-ruby21:0.9.15
 MAINTAINER Andres Koetsier
 
 # Set correct environment variables.
@@ -8,10 +8,10 @@ ENV HOME /root
 CMD ["/sbin/my_init"]
 
 # Build the latest Ruby 2.1
-RUN /build/ruby2.1.sh
+#RUN /pd_build/ruby2.1.sh
 
 # Needed for checking db-migrations of rails project
-RUN apt-get update
+RUN apt-get update && apt-get dist-upgrade -y
 RUN apt-get install -y mysql-client
 
 # Clean up APT when done.
