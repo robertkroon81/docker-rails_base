@@ -1,5 +1,5 @@
 FROM phusion/passenger-ruby21:0.9.15
-MAINTAINER Andres Koetsier
+MAINTAINER "Andres Koetsier"
 
 # Set correct environment variables.
 ENV HOME /root
@@ -21,11 +21,13 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN rm -f /etc/service/nginx/down
 RUN rm /etc/nginx/sites-enabled/default
 
+# Hard remove SSH
+RUN rm -rf /etc/service/sshd /etc/my_init.d/00_regen_ssh_host_keys.sh
+
 # Configure Nginx
 ADD docker/disable-version.conf /etc/nginx/conf.d/disable-version.conf
 ADD docker/nginx-webapp.conf /etc/nginx/webapp.conf
 ADD docker/nginx-env.conf /etc/nginx/main.d/env.conf
 ADD docker/app_init /etc/my_init.d/app_init
 
-USER app
-RUN mkdir /home/app/webapp
+RUN mkdir -p /home/app/webapp && chown app:app /home/app/webapp
