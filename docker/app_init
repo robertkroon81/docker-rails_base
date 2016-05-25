@@ -10,6 +10,9 @@ cp /etc/nginx/webapp.conf /etc/nginx/sites-enabled/webapp.conf
 sed 's,{{RAILS_ENV}},'"${RAILS_ENV}"',g' -i /etc/nginx/sites-enabled/webapp.conf
 sed 's,{{SERVER_NAME}},'"${SERVER_NAME}"',g' -i /etc/nginx/sites-enabled/webapp.conf
 
+# Wait for db to accept connections
+timeout 10 bash -c -- "while !(nc -zw1 ${DB_HOST} 3306); do printf "."; sleep 1; done"
+
 # Init db
 QUERY="SELECT count(1) FROM information_schema.tables WHERE table_schema = '${DB_NAME}';"
 TABLE_COUNT=$(mysql -h ${DB_HOST} -u ${DB_USER} ${DB_PASS:+-p$DB_PASS} -ss -e "${QUERY}")
@@ -25,5 +28,6 @@ if [ -z "${TABLE_COUNT}" -o ${TABLE_COUNT} -eq 0 -o ${MIGRATION_COUNT} -ne ${MIG
   bundle exec rake db:migrate RAILS_ENV=${RAILS_ENV} --trace
 fi
 
-exit 0
+exec /usr/bin/supervisord -nc /etc/supervisor/supervisord.conf
+#exit 0
 
